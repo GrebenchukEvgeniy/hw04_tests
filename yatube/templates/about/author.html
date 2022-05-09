@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Об авторе проекта{% endblock %}
+{% block content %}
+<style type="text/css">
+    jpg {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  h1 {
+    font-size: 50px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    margin-top: 40px;
+    margin-bottom: 20px;
+  }
+
+  p {
+    font-size: 18px;
+  }
+</style>
+<div class="container" >
+    <div class="row">
+      <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-6">
+        <h1>Гребенчук Евгений</h1>
+        <p>Я работаю в нефтегазовой сфере. Мы бурим скважины для добычи нефти и газа для всей нашей страны и для экспорта на 
+            мировой рынок. Но на данный момент я решил отучиться на бэкэнд разработчика и попробовать себя в новой сфере.</p>
+        <p>Для этого я с ноября 2021 года начал изучения Python на платформе Stepic и с марта месяца 2022 г прохожу курсы
+            на Яндекс Практикум.</p>
+      </div>
+      <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-6">
+        <img src="{% static 'img/my_photo.jpg' %}">
+      </div>
+    </div>
+</div>
+<div class="container" >
+    <div class="row">
+       <div class="col-12">
+        <h2>Познакомьтесь со мной ближе</h2>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-12 col-sm-12 col-md-6 col-lg-3 col-xl-3">
+        <p><a href="https://github.com/GrebenchukEvgeniy/">Мой GitHub</a></p>
+        <p><a href="{% static 'file/resume.pdf' %}">Мое старое резюме</a></p>
+      </div>
+    </div>
+  </div>
+{% endblock %} 
