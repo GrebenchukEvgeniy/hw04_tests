@@ -114,5 +114,6 @@ class PostFormTests(TestCase):
         text_help_text = PostFormTests.form.fields['text'].help_text
         group_help_text = PostFormTests.form.fields['group'].help_text
         self.assertEqual(text_help_text, 'Текст нового поста')
-        self.assertEqual(group_help_text,
-                          'Группа, к которой будет относиться пост')
+        self.assertEqual(
+            group_help_text, 'Группа, к которой будет относиться пост'
+        )
