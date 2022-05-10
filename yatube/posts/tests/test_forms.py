@@ -1,18 +1,16 @@
+import shutil
 import tempfile
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
+
 from posts.forms import PostForm
-from posts.models import Group, Post
+from posts.models import Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
-User = get_user_model()
 
-
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -34,23 +32,22 @@ class PostCreateFormTests(TestCase):
             pub_date='Тестовая дата',
             group=cls.group
         )
-        cls.form = PostForm()
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        self.guest_client = Client()
         self.author_authorized_client = Client()
         self.author_authorized_client.force_login(self.user)
 
     def test_create_post(self):
         """Валидная форма создает запись в Post."""
-        posts_count = Post.objects.count()
+        bunch_posts_old = set(Post.objects.all())
         form_data = {
-            'group': PostCreateFormTests.group.id,
-            'text': 'Тестовый текст',
+            'group': self.group.id,
+            'text': 'Проверка поста',
         }
         response = self.author_authorized_client.post(
             reverse('posts:post_create'),
@@ -60,20 +57,19 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(
             response, reverse('posts:profile', kwargs={'username': 'auth'})
         )
-        self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.filter(
-                group=PostCreateFormTests.group.id,
-                text='Тестовый текст',
-            ).exists()
-        )
+        bunch_posts_new = set(Post.objects.all())
+        diff_bunches = bunch_posts_new - bunch_posts_old
+        self.assertEqual(len(diff_bunches), 1)
+        post_check = diff_bunches.pop()
+        self.assertEqual(form_data['text'], post_check.text)
 
     def test_edit_post(self):
         """Проверка формы редактирования поста и изменение
         его в базе данных."""
+        bunch_posts_old = set(Post.objects.all())
         form_data = {
-            'group': PostCreateFormTests.group_new.id,
-            'text': 'Тестовый текст',
+            'group': self.group.id,
+            'text': 'Тестовое редактирование',
         }
         response = self.author_authorized_client.post(reverse(
             'posts:post_edit', kwargs={'post_id': f'{self.post.id}'}),
@@ -84,18 +80,11 @@ class PostCreateFormTests(TestCase):
             response, reverse(
                 'posts:post_detail', kwargs={'post_id': f'{self.post.id}'})
         )
-        self.assertTrue(
-            Post.objects.filter(
-                group=PostCreateFormTests.group_new.id,
-                text='Тестовый текст',
-            ).exists()
-        )
-        self.assertFalse(
-            Post.objects.filter(
-                group=PostCreateFormTests.group.id,
-                text='Тестовый пост',
-            ).exists()
-        )
+        bunch_posts_new = set(Post.objects.all())
+        diff_bunches = bunch_posts_new - bunch_posts_old
+        self.assertEqual(len(diff_bunches), 0)
+        post_check = bunch_posts_new.pop()
+        self.assertEqual(form_data['text'], post_check.text)
 
 
 class PostFormTests(TestCase):
@@ -105,12 +94,14 @@ class PostFormTests(TestCase):
         cls.form = PostForm()
 
     def test_title_label(self):
+        """Тестирование labels в форме PostForm."""
         text_label = PostFormTests.form.fields['text'].label
         group_label = PostFormTests.form.fields['group'].label
         self.assertEqual(text_label, 'Текст поста:')
         self.assertEqual(group_label, 'Группа:')
 
     def test_title_help_text(self):
+        """Тестирование help_text в форме PostForm."""
         text_help_text = PostFormTests.form.fields['text'].help_text
         group_help_text = PostFormTests.form.fields['group'].help_text
         self.assertEqual(text_help_text, 'Текст нового поста')

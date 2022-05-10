@@ -22,6 +22,11 @@ class PostViewsTests(TestCase):
             description='Тестовое описание',
             slug='test-slug'
         )
+        cls.group_new = Group.objects.create(
+            title='Тестовый заголовок новый',
+            description='Тестовое описание новое',
+            slug='test-slug-new'
+        )
         cls.post = Post.objects.create(
             author=cls.user,
             text='Тестовый пост',
@@ -62,9 +67,9 @@ class PostViewsTests(TestCase):
         post_group_0 = first_object.group
         post_text_0 = first_object.text
         post_pub_date_0 = first_object.pub_date
-        self.assertEqual(post_author_0, 'auth')
+        self.assertEqual(post_author_0, self.user.username)
         self.assertEqual(post_group_0, self.group)
-        self.assertEqual(post_text_0, 'Тестовый пост')
+        self.assertEqual(post_text_0, self.post.text)
         self.assertEqual(post_pub_date_0, self.post.pub_date)
 
     def test_group_list_page_show_correct_context(self):
@@ -72,17 +77,18 @@ class PostViewsTests(TestCase):
         response = self.author_authorized_client.get(
             reverse('posts:group_list', kwargs={'slug': 'test-slug'})
         )
-        self.assertEqual(response.context.get('group').slug, 'test-slug')
+        self.assertEqual(response.context.get('group').slug, self.group.slug)
         self.assertEqual(
-            response.context.get('group').title, 'Тестовый заголовок')
+            response.context.get('group').title, self.group.title)
         self.assertEqual(
-            response.context.get('group').description, 'Тестовое описание')
+            response.context.get('group').description, self.group.description)
         self.assertEqual(
-            response.context.get('page_obj')[0].author.username, 'auth')
+            response.context.get('page_obj')[0].author.username,
+            self.user.username)
         self.assertEqual(
             response.context.get('page_obj')[0].group, self.group)
         self.assertEqual(
-            response.context.get('page_obj')[0].text, 'Тестовый пост')
+            response.context.get('page_obj')[0].text, self.post.text)
         self.assertEqual(
             response.context.get('page_obj')[0].pub_date,
             self.post.pub_date)
@@ -92,14 +98,15 @@ class PostViewsTests(TestCase):
         response = self.author_authorized_client.get(
             reverse('posts:profile', kwargs={'username': 'auth'})
         )
-        self.assertEqual(response.context.get('author').username, 'auth')
+        self.assertEqual(response.context.get('author').username,
+                         self.user.username)
         self.assertEqual(
             response.context.get('page_obj')[0].group, self.group)
         self.assertEqual(
-            response.context.get('page_obj')[0].text, 'Тестовый пост')
+            response.context.get('page_obj')[0].text, self.post.text)
         self.assertEqual(
             response.context.get('page_obj')[0].pub_date,
-            PostViewsTests.post.pub_date)
+            self.post.pub_date)
 
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
@@ -109,13 +116,14 @@ class PostViewsTests(TestCase):
         )
         self.assertEqual(
             response.context.get('post').id, int(f'{self.post.id}'))
-        self.assertEqual(response.context.get('post').author.username, 'auth')
+        self.assertEqual(
+            response.context.get('post').author.username, self.user.username)
         self.assertEqual(
             response.context.get('post').group, self.group)
-        self.assertEqual(response.context.get('post').text, 'Тестовый пост')
+        self.assertEqual(response.context.get('post').text, self.post.text)
         self.assertEqual(
             response.context.get('post').pub_date,
-            PostViewsTests.post.pub_date)
+            self.post.pub_date)
 
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -138,13 +146,16 @@ class PostViewsTests(TestCase):
         )
         self.assertEqual(
             response.context.get('post').id, int(f'{self.post.id}'))
-        self.assertEqual(response.context.get('post').author.username, 'auth')
+        self.assertEqual(
+            response.context.get('post').author.username, self.user.username)
         self.assertEqual(
             response.context.get('post').group, self.group)
-        self.assertEqual(response.context.get('post').text, 'Тестовый пост')
+        self.assertEqual(response.context.get('post').text, self.post.text)
         self.assertEqual(
             response.context.get('post').pub_date,
             self.post.pub_date)
+        self.assertNotEqual(
+            response.context.get('post').group, self.group_new)
 
 
 class PaginatorViewsTest(TestCase):
@@ -160,13 +171,10 @@ class PaginatorViewsTest(TestCase):
         for i in range(NUM_OF_PUBLICATIONS + NUM_OF_PUBLICATIONS_2ND_PAGE):
             cls.post = Post.objects.create(
                 author=cls.user,
-                text='Тестовый пост' + str(i),
+                text=f'Тестовый пост {i}',
                 pub_date=datetime.now(),
                 group=cls.group
             )
-
-    def setUp(self):
-        self.client = Client()
 
     def test_first_page_contains_ten_records(self):
         templates_pages_names = [
