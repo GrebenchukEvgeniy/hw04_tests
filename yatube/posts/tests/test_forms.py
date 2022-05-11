@@ -4,7 +4,6 @@ import tempfile
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
-
 from posts.forms import PostForm
 from posts.models import Group, Post, User
 
@@ -55,7 +54,8 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertRedirects(
-            response, reverse('posts:profile', kwargs={'username': 'auth'})
+            response, reverse(
+                'posts:profile', kwargs={'username': self.user.username})
         )
         bunch_posts_new = set(Post.objects.all())
         diff_bunches = bunch_posts_new - bunch_posts_old

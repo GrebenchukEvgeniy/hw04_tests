@@ -1,13 +1,12 @@
 from datetime import datetime
 
 from django import forms
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from posts.models import Group, Post
+
+from posts.models import Group, Post, User
 from posts.utils import NUM_OF_PUBLICATIONS
 
-User = get_user_model()
 
 NUM_OF_PUBLICATIONS_2ND_PAGE: int = 3
 
@@ -43,9 +42,9 @@ class PostViewsTests(TestCase):
         """URL-адрес использует соответствующий шаблон."""
         templates_pages_names = {
             reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list', kwargs={'slug': 'test-slug'}):
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}):
             'posts/group_list.html',
-            reverse('posts:profile', kwargs={'username': 'auth'}):
+            reverse('posts:profile', kwargs={'username': self.user.username}):
             'posts/profile.html',
             reverse('posts:post_detail',
                     kwargs={'post_id': f'{self.post.id}'}):
@@ -75,7 +74,7 @@ class PostViewsTests(TestCase):
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
         response = self.author_authorized_client.get(
-            reverse('posts:group_list', kwargs={'slug': 'test-slug'})
+            reverse('posts:group_list', kwargs={'slug': self.group.slug})
         )
         self.assertEqual(response.context.get('group').slug, self.group.slug)
         self.assertEqual(
@@ -96,7 +95,7 @@ class PostViewsTests(TestCase):
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
         response = self.author_authorized_client.get(
-            reverse('posts:profile', kwargs={'username': 'auth'})
+            reverse('posts:profile', kwargs={'username': self.user.username})
         )
         self.assertEqual(response.context.get('author').username,
                          self.user.username)
@@ -157,6 +156,12 @@ class PostViewsTests(TestCase):
         self.assertNotEqual(
             response.context.get('post').group, self.group_new)
 
+    def test_new_post_is_not_in_group_new(self):
+        """Тест проверки, что новый пост не в неправильной группе."""
+        response = self.author_authorized_client.get(
+            reverse('posts:group_list', kwargs={'slug': self.group_new.slug}))
+        self.assertEqual(len(response.context.get('page_obj').object_list), 0)
+
 
 class PaginatorViewsTest(TestCase):
     @classmethod
@@ -179,8 +184,8 @@ class PaginatorViewsTest(TestCase):
     def test_first_page_contains_ten_records(self):
         templates_pages_names = [
             reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': 'test-slug'}),
-            reverse('posts:profile', kwargs={'username': 'auth'}),
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}),
+            reverse('posts:profile', kwargs={'username': self.user.username}),
         ]
         for page in templates_pages_names:
             response = self.client.get(page)
@@ -190,8 +195,8 @@ class PaginatorViewsTest(TestCase):
     def test_second_page_contains_three_records(self):
         templates_pages_names = [
             reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': 'test-slug'}),
-            reverse('posts:profile', kwargs={'username': 'auth'}),
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}),
+            reverse('posts:profile', kwargs={'username': self.user.username}),
         ]
         for page in templates_pages_names:
             response = self.client.get(page + '?page=2')
